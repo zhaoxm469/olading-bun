@@ -10,7 +10,7 @@ app.use('/static/*',serveStatic({ root: './' }))
 
 app.use(corsMiddleware)
 
-app.post('/api/logs', logs.uploadLogs)
+app.post('/api/log', logs.uploadLogs)
 app.get('/api/clogs', logs.getLogs)
 app.get('/api/logs/delete/:type', logs.deleteLogs)
 app.get('/api/code/pull', code.gitPull)
