@@ -9,12 +9,12 @@ export async function corsMiddleware(c: Context, next: Next) {
     c.header('Access-Control-Max-Age', '3600');
 
     // 处理 OPTIONS 请求
-    if (c.req.method === 'OPTIONS') {
-        // 设置状态码为 204
-        c.status(204);
-        return c.text('');
-    }
+    // if (c.req.method === 'OPTIONS') {
+    //     // 设置状态码为 204
+    //     c.status(204);
+    //     return c.text('');
+    // }
 
-    // 继续处理其他请求
+    // 继续处理其他请求ss-Control-Allow-Headers
     await next();
 }
