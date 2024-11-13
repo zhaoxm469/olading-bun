@@ -1,0 +1,13 @@
+{
+  "name": "olading-bun",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.6.9",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
