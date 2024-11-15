@@ -19,8 +19,7 @@ app.get('/api/code/pull', code.gitPull)
 app.get('/api/captcha', captcha.getCaptcha)
 app.get('/api/redis/test', redis.test)
 
-
 export default { 
-    port: 8073, 
+    port: Bun.env["APP_PROT"], 
     fetch: app.fetch, 
 } 
