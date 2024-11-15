@@ -1,5 +1,11 @@
 {
     "cSpell.words": [
         "Hono"
+    ],
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
     ]
 }

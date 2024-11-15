@@ -4,24 +4,25 @@
         "lib": ["ESNext"],
         "target": "ESNext",
         "module": "ESNext",
-        "moduleDetection": "force",
+                    "moduleDetection": "force",
         "jsx": "react-jsx",
         "allowJs": true,
 
-        // Bundler mode
+        // // Bundler mode
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
         "verbatimModuleSyntax": true,
         "noEmit": true,
 
-        // Best practices
+        // // Best practices
         "strict": true,
         "skipLibCheck": true,
         "noFallthroughCasesInSwitch": true,
 
-        // Some stricter flags
+        // // Some stricter flags
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noPropertyAccessFromIndexSignature": true
-    }
+    },
+    "include": ["src/**/*.ts", "src/**/*.tsx"],
 }

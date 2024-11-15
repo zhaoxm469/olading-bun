@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  redis:  # 添加 Redis 服务
+    image: redis:6.2-alpine  # 使用 Alpine 版本以减小镜像大小
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - local-redis_data:/data  # 持久化 Redis 数据
+    command: redis-server --appendonly yes  # 启用 AOF 持久化
+
+volumes:
+  local-redis_data:
+    name: local-redis_data
