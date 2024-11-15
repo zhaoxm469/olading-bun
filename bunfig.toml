@@ -1,0 +1,4 @@
+preload = ["./src/plugins/myPlugin.ts"]
+
+[define]
+"process.env.oName" = "'asdasda123'"

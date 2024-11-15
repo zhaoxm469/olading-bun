@@ -1,7 +1,8 @@
 {
   "name": "olading-bun",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "hot": "bun run --hot src/index.ts"
   },
   "dependencies": {
     "hono": "^4.6.9",
