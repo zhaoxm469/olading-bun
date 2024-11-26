@@ -29,7 +29,7 @@ app.post('/api/login', verifyCaptcha, login.login)
 
 // redis 测试
 app.get('/api/redis/test', redis.test)
-// app.get('/api/1', test.toDingH5)
+app.get('/api/1', test.toDingH5)
 
 // https://ding.haloweilai.com/teacher/lessonRecord/confirmClass?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1IjoiZGIxYmQ5Y2I2ODBkNGViODgyNjE2YWQzZjI2OTgzNjMifQ.iC7SNBQ_bvA3Tb4ZnHPluX1b565ZV_nJfa7gpFizRm0
 
