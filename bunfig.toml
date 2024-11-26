@@ -2,3 +2,8 @@ preload = ["./src/plugins/myPlugin.ts"]
 
 [define]
 "process.env.oName" = "'asdasda123'"
+
+[install]
+# registry = "https://mirrors.cloud.tencent.com/npm/"
+# registry = "https://registry.npmmirror.com/"
+registry = "https://mirrors.huaweicloud.com/repository/npm/"
