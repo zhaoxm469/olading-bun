@@ -19,8 +19,8 @@ export class RedisService {
 
     private setupEventListeners(): void {
         this.client.on('error', (err) => logger.error('Redis error', err));
-        this.client.on('connect', () => logger.info('Connected to Redis'));
-        this.client.on('ready', () => logger.info('Redis is ready'));
+        this.client.on('connect', () => logger.http('Connected to Redis'));
+        this.client.on('ready', () => logger.http('Redis is ready'));
         this.client.on('close', () => logger.warn('Redis connection closed'));
     }
 
