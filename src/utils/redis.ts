@@ -143,6 +143,7 @@ export class RedisService {
 const redisService = RedisService.getInstance({
     host: Bun.env['REDIS_HOST'] || 'localhost',
     port: Number(Bun.env['REDIS_PORT']),
+    password: Bun.env['REDIS_PASSWORD'],
 });
 
 export default redisService;
