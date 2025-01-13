@@ -2,7 +2,10 @@ import type { Context, Next } from "hono";
 
 export async function corsMiddleware(c: Context, next: Next) {
     // 设置允许的源，这里应该是请求的 Origin
-    c.header('Access-Control-Allow-Origin', 'https://112-qa.olading.com');
+    // c.header('Access-Control-Allow-Origin', 'https://112-qa.olading.com');
+    // c.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    c.header('Access-Control-Allow-Origin', '*');
+
 
     // 允许的请求方法
     c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');

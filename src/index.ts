@@ -18,8 +18,13 @@ app.use(corsMiddleware)
 
 // 阿拉钉log
 app.post('/api/log', logs.uploadLogs)
-app.get('/api/clogs', logs.getLogs)
+app.get('/api/logs', logs.getLogs)
+app.get('/api/logs/clear', logs.deleteLogs)
 app.get('/api/logs/delete/:type', logs.deleteLogs)
+
+app.post('/api/log/lingGong', logs.uploadLogs)
+// app.get('/api/log/lingGong', logs.uploadLogs)
+
 // 拉取代码
 app.get('/api/code/pull', code.gitPull)
 
