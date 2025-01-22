@@ -8,7 +8,7 @@ import login from './controllers/login'
 import { captchaMiddleware } from './middlewares/captcha'
 import analytics from './controllers/analytics'
 import test from './controllers/test'
-const { verifyCaptcha, createCaptcha } = captchaMiddleware()
+// const { verifyCaptcha, createCaptcha } = captchaMiddleware()
 
 const app = new Hono()
 
@@ -22,15 +22,17 @@ app.get('/api/logs', logs.getLogs)
 app.get('/api/logs/clear', logs.deleteLogs)
 app.get('/api/logs/delete/:type', logs.deleteLogs)
 
-app.post('/api/log/lingGong', logs.uploadLogs)
+app.post('/api/lg/upload', logs.lgUpload)
+
+// app.post('/api/log/lingGong', logs.uploadLogs)
 // app.get('/api/log/lingGong', logs.uploadLogs)
 
 // 拉取代码
 app.get('/api/code/pull', code.gitPull)
 
 // 验证码
-app.get('/api/captcha', createCaptcha)
-app.post('/api/login', verifyCaptcha, login.login)
+// app.get('/api/captcha', createCaptcha)
+// app.post('/api/login', verifyCaptcha, login.login)
 
 // redis 测试
 // app.get('/api/redis/test', redis.test)

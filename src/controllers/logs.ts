@@ -1,6 +1,7 @@
 import type { Context } from "hono"
 import logger from "../utils/logger"
 import path from "path"
+import { writeFile } from "fs/promises";
 
 const errorLogPath = path.join(__dirname, "../../logs/error.log");
 const allLogPath = path.join(__dirname, "../../logs/all.log");
@@ -14,6 +15,21 @@ export default {
             logger.info(body)
         }
         return c.text('ok')
+    },
+    async lgUpload(c: Context) {
+        const fData = await c.req.formData()
+        console.log(fData)
+        const file = fData.get('file')
+        if (file instanceof Blob) {
+            const buffer = await file.arrayBuffer();
+            const data = new Uint8Array(buffer);
+            await writeFile(path.join(process.cwd(), 'uploads', Math.random() + file.name), data);
+            return c.json({
+                code: 200,
+            })
+        } else {
+            return new Response("Invalid file", { status: 400 });
+        }
     },
     getLogs: async (c: Context) => {
         const query = c.req.query()
