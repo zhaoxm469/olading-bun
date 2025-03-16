@@ -17,7 +17,7 @@ app.use('/static/*', serveStatic({ root: './' }))
 app.use(corsMiddleware)
 
 // 阿拉钉log
-app.post('/api/log', logs.uploadLogs)
+// app.post('/api/log', logs.uploadLogs)
 app.get('/api/logs', logs.getLogs)
 app.get('/api/logs/clear', logs.deleteLogs)
 app.get('/api/logs/delete/:type', logs.deleteLogs)
