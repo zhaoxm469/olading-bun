@@ -1,1 +1,1 @@
-pm2 start /home/zhaoxm/olading-bun/pm2.config.js
+pm2 start npm --name olading-bun -- run dev
