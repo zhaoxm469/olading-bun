@@ -386,6 +386,7 @@
 
     <script>
         const { createApp, ref, computed, onMounted, reactive, watch } = Vue;
+        const logsApi = "/api/v1.0/request/report/logs"
 
         createApp({
             setup() {
@@ -653,7 +654,7 @@
                 async function fetchLogs() {
                     isLoading.value = true;
                     try {
-                        const response = await fetch('/api/v1.0/logs');
+                        const response = await fetch(logsApi);
                         if (response.ok) {
                             // 修复赋值问题，直接将结果赋值给 logs.value
                             logs.value = (await response.json()).filter(item => item);

@@ -16,10 +16,10 @@ app.use('/static/*', serveStatic({ root: './' }))
 
 app.use(corsMiddleware)
 
-
+const zhiniuApiVersion = 'v1.0'
 // 智牛API log
-app.get('/api/v1.0/logs', logs.getLogs)
-app.post('/api/v1.0/log/upload', logs.uploadLogs)
+app.get(`/api/${zhiniuApiVersion}/request/report/logs`, logs.getLogs)
+app.post(`/api/${zhiniuApiVersion}/request/report`, logs.uploadLogs)
 
 // 拉取代码
 app.get('/api/code/pull', code.gitPull)
