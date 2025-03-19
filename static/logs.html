@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API异常日志查看</title>
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- 加载字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 加载图标 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .log-card {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .log-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .code-block {
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.3s;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+
+        .slide-fade-enter-active {
+            transition: all 0.3s ease-out;
+        }
+
+        .slide-fade-leave-active {
+            transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+        }
+
+        .slide-fade-enter-from,
+        .slide-fade-leave-to {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* 固定宽度标签，防止折行 */
+        .label-fixed {
+            min-width: 80px;
+            flex-shrink: 0;
+        }
+
+        /* Toast 样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background-color: #10B981;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 50;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 编辑模式样式 */
+        .edit-mode {
+            border: 2px solid #6366F1;
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="min-h-screen bg-slate-50">
+        <!-- Toast 提示 -->
+        <div class="toast" :class="{ show: showToast }">
+            <div class="flex items-center">
+                <i class="bi bi-check-circle-fill mr-2"></i>
+                <span>{{ toastMessage }}</span>
+            </div>
+        </div>
+
+        <!-- 顶部导航 -->
+        <nav class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="bi bi-bug-fill text-2xl"></i>
+                    <h1 class="text-xl font-bold">前端调用API异常日志监控</h1>
+                </div>
+                <div class="text-sm">
+                    <span class="mr-2">共 {{ filteredLogs.length }} 条日志</span>
+                    <button @click="fetchLogs"
+                        class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-md transition-colors">
+                        <i class="bi bi-arrow-clockwise mr-1"></i>刷新
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 筛选区域 -->
+        <div class="container mx-auto px-4 py-5">
+            <div class="bg-white rounded-xl shadow-sm p-5 mb-6">
+                <h2 class="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                    <i class="bi bi-funnel-fill mr-2 text-indigo-500"></i>日志筛选
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">请求地址</label>
+                        <div class="relative">
+                            <i class="bi bi-link-45deg absolute left-3 top-2.5 text-gray-400"></i>
+                            <input type="text" v-model="filters.url" placeholder="输入请求地址"
+                                class="pl-9 w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">请求时间</label>
+                        <div class="relative">
+                            <i class="bi bi-calendar-date absolute left-3 top-2.5 text-gray-400"></i>
+                            <input type="text" v-model="filters.time" placeholder="YYYY-MM-DD"
+                                class="pl-9 w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Token</label>
+                        <div class="relative">
+                            <i class="bi bi-key-fill absolute left-3 top-2.5 text-gray-400"></i>
+                            <input type="text" v-model="filters.token" placeholder="输入Token"
+                                class="pl-9 w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span v-if="filters.url || filters.time || filters.token"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        已筛选
+                        <button @click="clearFilters" class="ml-1 text-indigo-500 hover:text-indigo-700">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </button>
+                    </span>
+                </div>
+            </div>
+
+            <!-- 日志列表 -->
+            <transition-group name="slide-fade" tag="div" class="space-y-5">
+                <div v-for="(log, index) in filteredLogs" :key="index"
+                    class="log-card bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div
+                        :class="['p-4 flex justify-between items-start', log.isError ? 'bg-red-50 border-l-4 border-red-500' : 'bg-green-50 border-l-4 border-green-500']">
+                        <div>
+                            <div class="flex items-center">
+                                <span
+                                    :class="['rounded-full w-2 h-2 mr-2', log.isError ? 'bg-red-500' : 'bg-green-500']"></span>
+                                <h3 class="text-base font-semibold text-gray-800 truncate max-w-md">
+                                    {{ log.request.url }}
+                                </h3>
+                                <span
+                                    :class="['ml-3 px-2 py-0.5 rounded-md text-xs font-medium', log.isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800']">
+                                    {{ log.isError ? '异常' : '正常' }}
+                                </span>
+                            </div>
+                            <div class="mt-1 text-sm text-gray-500 flex flex-wrap gap-x-4">
+                                <span class="flex items-center"><i class="bi bi-clock mr-1"></i>{{ log.createTime
+                                    }}</span>
+                                <span class="flex items-center"><i class="bi bi-globe mr-1"></i>{{ log.source }}</span>
+                                <span class="flex items-center">
+                                    <i class="bi bi-arrow-right-circle mr-1"></i>
+                                    <span :class="['font-medium', getMethodColor(log.request.method)]">{{
+                                        log.request.method }}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button @click="retryRequest(index)" class="text-indigo-500 hover:text-indigo-700 p-1"
+                                title="重试请求">
+                                <i class="bi bi-arrow-repeat text-lg"></i>
+                            </button>
+                            <button @click="copyLogInfo(log)" class="text-gray-500 hover:text-gray-700 p-1"
+                                title="复制日志信息">
+                                <i class="bi bi-clipboard text-lg"></i>
+                            </button>
+                            <button @click="toggleDetails(index)" class="text-gray-500 hover:text-gray-700 p-1"
+                                title="展开详情">
+                                <i
+                                    :class="['bi text-lg transition-transform', openedDetails[index] ? 'bi-chevron-up' : 'bi-chevron-down']"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div v-if="openedDetails[index]" class="p-4 border-t border-gray-100">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- 请求信息 -->
+                            <div>
+                                <h4 class="font-medium text-sm text-gray-700 mb-2 flex items-center justify-between">
+                                    <span class="flex items-center">
+                                        <i class="bi bi-arrow-up-right-circle-fill mr-1 text-indigo-500"></i>请求信息
+                                    </span>
+                                    <div class="flex space-x-2">
+                                        <button @click="toggleEditMode(index)"
+                                            class="text-indigo-500 hover:text-indigo-700" title="编辑请求">
+                                            <i class="bi bi-pencil-fill text-sm"></i>
+                                        </button>
+                                        <button @click="copyRequestInfo(log)"
+                                            class="text-indigo-500 hover:text-indigo-700" title="复制请求信息">
+                                            <i class="bi bi-clipboard text-sm"></i>
+                                        </button>
+                                    </div>
+                                </h4>
+                                <div
+                                    :class="['bg-gray-50 rounded-md p-3 text-sm', editingLog === index ? 'edit-mode' : '']">
+                                    <div class="grid gap-y-2 mb-2">
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">请求地址:</span>
+                                            <span v-if="editingLog !== index"
+                                                class="font-mono text-gray-800 break-all">{{ log.request.url }}</span>
+                                            <input v-else type="text" v-model="editedRequest.url"
+                                                class="w-full px-2 py-1 border rounded font-mono text-sm" />
+                                        </div>
+
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">请求方式:</span>
+                                            <span v-if="editingLog !== index"
+                                                :class="['font-mono', getMethodColor(log.request.method)]">{{
+                                                log.request.method }}</span>
+                                            <select v-else v-model="editedRequest.method"
+                                                class="px-2 py-1 border rounded font-mono text-sm">
+                                                <option value="GET">GET</option>
+                                                <option value="POST">POST</option>
+                                                <option value="PUT">PUT</option>
+                                                <option value="DELETE">DELETE</option>
+                                                <option value="PATCH">PATCH</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">请求时间:</span>
+                                            <span class="font-mono text-gray-800">{{ log.createTime }}</span>
+                                        </div>
+
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">来源:</span>
+                                            <span class="font-mono text-gray-800">{{ log.source }}</span>
+                                        </div>
+
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">Token:</span>
+                                            <span class="font-mono text-gray-800 break-all">{{ getToken(log) || '无'
+                                                }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="text-gray-500">请求数据:</span>
+                                            <button v-if="editingLog !== index" @click="copyRequestData(log)"
+                                                class="text-xs text-indigo-500 hover:text-indigo-700" title="复制请求数据">
+                                                <i class="bi bi-clipboard mr-1"></i>复制
+                                            </button>
+                                        </div>
+                                        <pre v-if="editingLog !== index"
+                                            class="code-block bg-gray-800 text-gray-100 rounded-md p-3 text-xs overflow-auto">{{ JSON.stringify(log.request.data, null, 4) }}</pre>
+                                        <textarea v-else v-model="editedRequestDataStr"
+                                            class="w-full h-48 border rounded p-2 font-mono text-xs"
+                                            placeholder="请输入JSON格式的请求数据"></textarea>
+                                    </div>
+                                    <div v-if="editingLog === index" class="mt-3 flex justify-end space-x-2">
+                                        <button @click="cancelEdit"
+                                            class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs">
+                                            取消
+                                        </button>
+                                        <button @click="sendEditedRequest(index)"
+                                            class="px-3 py-1 rounded bg-indigo-500 hover:bg-indigo-600 text-white text-xs">
+                                            发送请求
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 响应信息 -->
+                            <div>
+                                <h4 class="font-medium text-sm text-gray-700 mb-2 flex items-center justify-between">
+                                    <span class="flex items-center">
+                                        <i class="bi bi-arrow-down-left-circle-fill mr-1 text-indigo-500"></i>响应信息
+                                    </span>
+                                    <button @click="copyResponseInfo(log)" class="text-indigo-500 hover:text-indigo-700"
+                                        title="复制响应信息">
+                                        <i class="bi bi-clipboard text-sm"></i>
+                                    </button>
+                                </h4>
+                                <div class="bg-gray-50 rounded-md p-3 text-sm">
+                                    <div class="grid gap-y-2 mb-2">
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">状态码:</span>
+                                            <span
+                                                :class="['font-mono', log.response.code === 1 ? 'text-green-600' : 'text-red-600']">
+                                                {{ log.response.code }}
+                                            </span>
+                                        </div>
+
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">消息:</span>
+                                            <span class="font-mono text-gray-800" style="line-break: anywhere;">{{
+                                                log.response.message
+                                                }}</span>
+                                        </div>
+
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">是否模拟:</span>
+                                            <span class="font-mono"
+                                                :class="log.response.isMock ? 'text-yellow-600' : 'text-gray-600'">
+                                                {{ log.response.isMock ? '是' : '否' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="text-gray-500">响应数据:</span>
+                                            <button @click="copyResponseData(log)"
+                                                class="text-xs text-indigo-500 hover:text-indigo-700" title="复制响应数据">
+                                                <i class="bi bi-clipboard mr-1"></i>复制
+                                            </button>
+                                        </div>
+                                        <pre
+                                            class="code-block bg-gray-800 text-gray-100 rounded-md p-3 text-xs overflow-auto">{{ JSON.stringify(log.response, null, 4) }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 无数据提示 -->
+                <div v-if="filteredLogs.length === 0" class="text-center py-10">
+                    <div class="text-gray-400">
+                        <i class="bi bi-search text-4xl"></i>
+                        <p class="mt-2">没有找到匹配的日志记录</p>
+                    </div>
+                </div>
+            </transition-group>
+        </div>
+
+        <!-- 底部 -->
+        <!-- <footer class="py-4 mt-8 text-center text-gray-500 text-sm">
+            <p>© {{ new Date().getFullYear() }} 智牛前端API异常日志</p>
+        </footer> -->
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, reactive, watch } = Vue;
+
+        createApp({
+            setup() {
+                const logs = ref([]);
+                const openedDetails = ref({
+                    "0": true
+                });
+                const isLoading = ref(false);
+                const showToast = ref(false);
+                const toastMessage = ref('');
+                const editingLog = ref(null); // 当前正在编辑的日志索引
+                const editedRequest = reactive({
+                    url: '',
+                    method: '',
+                    data: {}
+                });
+                const editedRequestDataStr = ref('');
+
+                const filters = reactive({
+                    url: '',
+                    time: '',
+                    token: ''
+                });
+
+                // 显示Toast提示
+                function showToastMessage(message) {
+                    toastMessage.value = message;
+                    showToast.value = true;
+                    setTimeout(() => {
+                        showToast.value = false;
+                    }, 3000);
+                }
+
+                // 复制文本到剪贴板
+                async function copyToClipboard(text) {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        showToastMessage('复制成功');
+                    } catch (err) {
+                        console.error('复制失败:', err);
+                        showToastMessage('复制失败，请重试');
+                    }
+                }
+
+                // 复制请求完整信息
+                function copyRequestInfo(log) {
+                    const info = `请求地址: ${log.request.url}\n` +
+                        `请求方式: ${log.request.method}\n` +
+                        `请求时间: ${log.createTime}\n` +
+                        // `来源: ${log.source}\n` +
+                        `Token: ${getToken(log) || '无'}\n` +
+                        `请求数据: \n${JSON.stringify(log.request.data, null, 2)}`;
+                    copyToClipboard(info);
+                }
+
+                // 复制响应完整信息
+                function copyResponseInfo(log) {
+                    const info = `状态码: ${log.response.code}\n` +
+                        `消息: ${log.response.message}\n` +
+                        `是否模拟: ${log.response.isMock ? '是' : '否'}\n` +
+                        `响应数据: ${JSON.stringify(log.response.data, null, 2)}`;
+                    copyToClipboard(info);
+                }
+
+                // 复制请求数据
+                function copyRequestData(log) {
+                    copyToClipboard(JSON.stringify(log.request.data, null, 2));
+                }
+
+                // 复制响应数据
+                function copyResponseData(log) {
+                    copyToClipboard(JSON.stringify(log.response, null, 2));
+                }
+
+                // 复制日志完整信息
+                function copyLogInfo(log) {
+                    // const info = `请求地址: ${log.request.url}\n` +
+                    //     `请求方式: ${log.request.method}\n` +
+                    //     `请求时间: ${log.createTime}\n` +
+                    //     `来源: ${log.source}\n` +
+                    //     `Token: ${getToken(log) || '无'}\n` +
+                    //     `请求数据: ${JSON.stringify(log.request.data, null, 2)}\n\n` +
+                    //     `状态码: ${log.response.code}\n` +
+                    //     `消息: ${log.response.message}\n` +
+                    //     `是否模拟: ${log.response.isMock ? '是' : '否'}\n` +
+                    //     `响应数据: ${JSON.stringify(log.response.data, null, 2)}`;
+                    const info = `请求地址: ${log.request.url}\n` +
+                        `请求方式: ${log.request.method}\n` +
+                        `请求时间: ${log.createTime}\n` +
+                        // `来源: ${log.source}\n` +
+                        `Token: ${getToken(log) || '无'}\n` +
+                        `请求数据: ${JSON.stringify(log.request.data, null, 2)}\n\n` +
+                        // `状态码: ${log.response.code}\n` +
+                        // `消息: ${log.response.message}\n` +
+                        // `是否模拟: ${log.response.isMock ? '是' : '否'}\n` +
+                        `响应数据: ${JSON.stringify(log.response, null, 2)}`;
+                    copyToClipboard(info);
+                }
+
+                // 进入编辑模式
+                function toggleEditMode(index) {
+                    if (editingLog.value === index) {
+                        cancelEdit();
+                        return;
+                    }
+
+                    const log = logs.value[index];
+                    editingLog.value = index;
+                    editedRequest.url = log.request.url;
+                    editedRequest.method = log.request.method;
+                    editedRequest.data = log.request.data;
+                    editedRequestDataStr.value = JSON.stringify(log.request.data, null, 2);
+                }
+
+                // 取消编辑
+                function cancelEdit() {
+                    editingLog.value = null;
+                }
+
+                // 发送编辑后的请求
+                async function sendEditedRequest(index) {
+                    isLoading.value = true;
+
+                    try {
+                        // 解析JSON字符串为对象
+                        let requestData;
+                        try {
+                            requestData = JSON.parse(editedRequestDataStr.value);
+                        } catch (error) {
+                            showToastMessage('请求数据JSON格式无效，请检查');
+                            return;
+                        }
+
+                        const log = logs.value[index];
+                        const requestBody = {
+                            url: editedRequest.url,
+                            method: editedRequest.method,
+                            data: requestData,
+                            headers: log.request.headers || {}
+                        };
+
+                        showToastMessage('正在发送请求...');
+
+                        try {
+                            const response = await fetch('/api/v1.0/retry', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(requestBody)
+                            });
+
+                            if (response.ok) {
+                                const result = await response.json();
+                                // 更新日志列表中的响应数据
+                                logs.value[index].response = result;
+                                logs.value[index].isError = result.code !== 1;
+                                showToastMessage('请求已重新发送，响应已更新');
+                            } else {
+                                showToastMessage('请求发送失败: ' + (await response.text()));
+                            }
+                        } catch (error) {
+                            console.error('请求发送错误:', error);
+                            showToastMessage('请求发送失败，网络错误');
+                        }
+                    } finally {
+                        isLoading.value = false;
+                        // editingLog.value = null;
+                    }
+                }
+
+                // 重试请求（不编辑，直接发送）
+                function retryRequest(index) {
+                    toggleEditMode(index);
+                    // 自动展开详情
+                    openedDetails.value = {
+                        ...openedDetails.value,
+                        [index]: true
+                    };
+                }
+
+                // 过滤后的日志
+                const filteredLogs = computed(() => {
+                    if (!filters.url && !filters.time && !filters.token) {
+                        return logs.value;
+                    }
+
+                    return logs.value.filter(log => {
+                        const urlMatch = !filters.url || (log.request.url && log.request.url.toLowerCase().includes(filters.url.toLowerCase()));
+                        const timeMatch = !filters.time || (log.createTime && log.createTime.includes(filters.time));
+
+                        // 尝试从请求数据中获取token
+                        const token = getToken(log);
+                        const tokenMatch = !filters.token || (token && token.toLowerCase().includes(filters.token.toLowerCase()));
+
+                        return urlMatch && timeMatch && (filters.token ? tokenMatch : true);
+                    });
+                });
+
+                // 监听筛选条件变化
+                watch(filters, () => {
+                    console.log('筛选条件已更新:', filters);
+                }, { deep: true });
+
+                // 获取Token（从请求数据中查找）
+                function getToken(log) {
+                    if (log?.token) return log.token
+
+                    if (log.request && log.request.data) {
+                        // 尝试查找常见的token字段名
+                        const tokenFields = ['token', 'accessToken', 'access_token', 'auth_token', 'authToken'];
+                        for (const field of tokenFields) {
+                            if (log.request.data[field]) {
+                                return log.request.data[field];
+                            }
+                        }
+
+                        // 尝试从headers中查找
+                        if (log.request.headers) {
+                            for (const field of tokenFields) {
+                                if (log.request.headers[field]) {
+                                    return log.request.headers[field];
+                                }
+                            }
+
+                            // 检查Authorization头
+                            if (log.request.headers.Authorization || log.request.headers.authorization) {
+                                return log.request.headers.Authorization || log.request.headers.authorization;
+                            }
+                        }
+                    }
+                    return null;
+                }
+
+                // 切换详情显示
+                function toggleDetails(index) {
+                    openedDetails.value = {
+                        ...openedDetails.value,
+                        [index]: !openedDetails.value[index]
+                    };
+                }
+
+                // 根据请求方法返回颜色类
+                function getMethodColor(method) {
+                    if (!method) return 'text-gray-800';
+
+                    switch (method.toUpperCase()) {
+                        case 'GET': return 'text-blue-600';
+                        case 'POST': return 'text-green-600';
+                        case 'PUT': return 'text-yellow-600';
+                        case 'DELETE': return 'text-red-600';
+                        case 'PATCH': return 'text-purple-600';
+                        default: return 'text-gray-800';
+                    }
+                }
+
+                // 清除所有筛选条件
+                function clearFilters() {
+                    Object.keys(filters).forEach(key => {
+                        filters[key] = '';
+                    });
+                }
+
+                // 获取日志数据
+                async function fetchLogs() {
+                    isLoading.value = true;
+                    try {
+                        const response = await fetch('/api/v1.0/logs');
+                        if (response.ok) {
+                            // 修复赋值问题，直接将结果赋值给 logs.value
+                            logs.value = (await response.json()).filter(item => item);
+                            console.log('获取日志成功:', logs.value);
+                        } else {
+                            console.error('获取日志失败:', response.statusText);
+                        }
+                    } catch (error) {
+                        console.error('获取日志出错:', error);
+                    } finally {
+                        isLoading.value = false;
+                    }
+                }
+
+
+
+                // 页面加载时获取日志
+                onMounted(() => {
+                    fetchLogs();
+                });
+
+                return {
+                    logs,
+                    openedDetails,
+                    isLoading,
+                    filters,
+                    filteredLogs,
+                    showToast,
+                    toastMessage,
+                    editingLog,
+                    editedRequest,
+                    editedRequestDataStr,
+                    toggleDetails,
+                    clearFilters,
+                    fetchLogs,
+                    getMethodColor,
+                    getToken,
+                    copyToClipboard,
+                    copyRequestInfo,
+                    copyResponseInfo,
+                    copyRequestData,
+                    copyResponseData,
+                    copyLogInfo,
+                    toggleEditMode,
+                    cancelEdit,
+                    sendEditedRequest,
+                    retryRequest
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
