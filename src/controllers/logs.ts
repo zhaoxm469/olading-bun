@@ -17,8 +17,8 @@ export default {
             await writeFile(jsonFilePath, JSON.stringify([], null, 2));
         }
 
-        existingData.length = maxLength;
         existingData.unshift(body);
+        existingData.length = maxLength;
         await writeFile(jsonFilePath, JSON.stringify(existingData, null, 2));
         return c.text('ok');
     },
