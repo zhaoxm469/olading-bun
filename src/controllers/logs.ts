@@ -4,7 +4,7 @@ import { writeFile } from "fs/promises";
 
 export default {
     uploadLogs: async (c: Context) => {
-        const maxLength = 100;
+        const maxLength = 1000;
         const body = await c.req.json();
         const jsonFilePath = path.join(process.cwd(), 'logs', 'report_data.json');
 
