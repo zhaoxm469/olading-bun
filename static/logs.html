@@ -206,7 +206,7 @@
                             <div class="flex items-center">
                                 <span
                                     :class="['rounded-full w-2 h-2 mr-2', log.isError ? 'bg-red-500' : 'bg-green-500']"></span>
-                                <h3 class="text-base font-semibold text-gray-800 truncate max-w-md">
+                                <h3 class="text-base font-semibold text-gray-800 truncate ">
                                     {{ log.request.url }}
                                 </h3>
                                 <span
@@ -294,6 +294,11 @@
                                         <div class="flex">
                                             <span class="text-gray-500 label-fixed">来源:</span>
                                             <span class="font-mono text-gray-800">{{ log.source }}</span>
+                                        </div>
+
+                                        <div class="flex">
+                                            <span class="text-gray-500 label-fixed">来源:</span>
+                                            <span class="font-mono text-gray-800">{{ log.href }}</span>
                                         </div>
 
                                         <div class="flex">
@@ -400,7 +405,7 @@
 
     <script>
         const { createApp, ref, computed, onMounted, reactive, watch } = Vue;
-        const logsApi = "/api/v1.0/request/report/logs"
+        const logsApi = "https://zhiniu.izhaoxm.cn/api/v1.0/request/report/logs"
 
         createApp({
             setup() {
@@ -437,7 +442,7 @@
                     url: '',
                     time: '',
                     token: '',
-                    isError: true
+                    isError: ""
                 });
 
                 // 显示Toast提示
